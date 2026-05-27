@@ -76,6 +76,9 @@
             <button><i class="fa-regular fa-envelope"></i></button>
             <span class="heartMail"><i class="fa-solid fa-heart"></i></span>
         </div>
+        <button id="memoriesBtn" class="memories-btn">
+            <i class="fa-solid fa-video"></i> Memories
+        </button>
         <div class="icon">
             <i class="fa-solid fa-chevron-left"></i>
         </div>
@@ -166,6 +169,23 @@
             </button>
         </div>
     </div>
+
+    <!-- Memories Video Modal -->
+    <div id="memoriesModal" class="memories-modal hidden">
+        <div class="memories-backdrop"></div>
+        <div class="memories-content">
+            <button id="closeMemoriesBtn" class="memories-close-btn">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            <video id="memoriesVideo" controls playsinline>
+                <source src="video.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <button id="showMessageBtn" class="show-message-btn">
+                <i class="fa-solid fa-envelope-open-text"></i> Show Message
+            </button>
+        </div>
+    </div>
     
     <!-- Music Player Button with Cute Arrow -->
     <div class="music-container">
@@ -191,6 +211,12 @@
     mail.addEventListener("click", ()=>{
         openEnvelopeModal();
     })
+    const memoriesBtn = document.getElementById('memoriesBtn');
+    const memoriesModal = document.getElementById('memoriesModal');
+    const memoriesBackdrop = memoriesModal.querySelector('.memories-backdrop');
+    const memoriesVideo = document.getElementById('memoriesVideo');
+    const closeMemoriesBtn = document.getElementById('closeMemoriesBtn');
+    const showMessageBtn = document.getElementById('showMessageBtn');
     
     // Envelope Modal Functions
     function openEnvelopeModal() {
@@ -238,6 +264,48 @@
             modal.classList.add('hidden');
         }, 1000);
     }
+
+    function openMemoriesModal() {
+        if (typeof audio !== 'undefined' && !audio.paused) {
+            shouldResumeMusicAfterVideo = true;
+            audio.pause();
+            isPlaying = false;
+            musicBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            musicBtn.style.background = 'linear-gradient(135deg, #ff69b4, #ff1493)';
+        } else {
+            shouldResumeMusicAfterVideo = false;
+        }
+
+        memoriesModal.classList.remove('hidden');
+        const playPromise = memoriesVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => {
+                // Ignore autoplay block until user taps play
+            });
+        }
+    }
+
+    function closeMemoriesModal() {
+        memoriesModal.classList.add('hidden');
+        memoriesVideo.pause();
+        memoriesVideo.currentTime = 0;
+
+        if (typeof audio !== 'undefined' && shouldResumeMusicAfterVideo && userInteracted) {
+            const musicPlayPromise = audio.play();
+            if (musicPlayPromise !== undefined) {
+                musicPlayPromise.then(() => {
+                    isPlaying = true;
+                    musicBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                    musicBtn.style.background = 'linear-gradient(135deg, #ff1493, #dc143c)';
+                }).catch(() => {
+                    isPlaying = false;
+                    musicBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                    musicBtn.style.background = 'linear-gradient(135deg, #ff69b4, #ff1493)';
+                });
+            }
+        }
+        shouldResumeMusicAfterVideo = false;
+    }
     
     // Add event listeners for closing modal
     document.addEventListener('DOMContentLoaded', function() {
@@ -253,7 +321,19 @@
             if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
                 closeEnvelopeModal();
             }
+            if (event.key === 'Escape' && !memoriesModal.classList.contains('hidden')) {
+                closeMemoriesModal();
+            }
         });
+    });
+
+    memoriesBtn.addEventListener('click', openMemoriesModal);
+    closeMemoriesBtn.addEventListener('click', closeMemoriesModal);
+    memoriesBackdrop.addEventListener('click', closeMemoriesModal);
+    memoriesVideo.addEventListener('ended', closeMemoriesModal);
+    showMessageBtn.addEventListener('click', () => {
+        closeMemoriesModal();
+        openEnvelopeModal();
     });
     
     // Music Player with Auto-play
@@ -265,6 +345,7 @@
     let userInteracted = false;
     const START_AT_SECONDS = 20;
     let didSeekToStart = false;
+    let shouldResumeMusicAfterVideo = false;
 
     function seekToStartOnce() {
         if (didSeekToStart) return;
