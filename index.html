@@ -263,6 +263,20 @@
     const enableMusicBtn = document.getElementById('enableMusicBtn');
     let isPlaying = false; // Start as not playing
     let userInteracted = false;
+    const START_AT_SECONDS = 20;
+    let didSeekToStart = false;
+
+    function seekToStartOnce() {
+        if (didSeekToStart) return;
+        if (audio.readyState >= 1) { // HAVE_METADATA
+            audio.currentTime = START_AT_SECONDS;
+            didSeekToStart = true;
+        }
+    }
+
+    audio.addEventListener('loadedmetadata', () => {
+        seekToStartOnce();
+    });
     
     // Set audio properties for better experience
     audio.loop = true; // Loop the music
@@ -273,6 +287,7 @@
         // Start playing music after initial animations
         setTimeout(() => {
             // Try to play with user gesture detection
+            seekToStartOnce();
             const playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
@@ -295,6 +310,7 @@
     
     // Handle music activation button
     enableMusicBtn.addEventListener('click', () => {
+        seekToStartOnce();
         const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
@@ -319,6 +335,7 @@
         
         isPlaying = !isPlaying;
         if (isPlaying) {
+            seekToStartOnce();
             audio.play();
             musicBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
             musicBtn.style.background = 'linear-gradient(135deg, #ff1493, #dc143c)';
